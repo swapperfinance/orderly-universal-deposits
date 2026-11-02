@@ -1,0 +1,47 @@
+/* @tailwind base; — the host app already ships Orderly's base layer */
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Marker: lets the plugin tell that this stylesheet is already on the page
+ * (imported by the host, or linked by DEX Creator), so it skips injecting its
+ * own copy (styles.ts).
+ */
+:root {
+  --swapper-deposits-styles: 1;
+}
+
+/*
+ * Dialog header navigation (DialogHeader.tsx). When the Swapper widget can go
+ * back, the wrapper gets [data-swapper-back]: the Deposit / Withdraw tab list
+ * slides right to make room and the back arrow fades/slides in at its start.
+ * Selector mirrors HEADER_TABLIST_SELECTOR (direct children only, so tab lists
+ * nested inside the forms are untouched).
+ */
+[data-swapper-header] > [data-orientation] > div > [role="tablist"] {
+  transition: margin-left 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[data-swapper-header][data-swapper-back] > [data-orientation] > div > [role="tablist"] {
+  margin-left: var(--swapper-back-offset, 40px);
+}
+
+.swapper-dialog-back {
+  opacity: 0;
+  transform: translateX(-8px) scale(0.9);
+  pointer-events: none;
+  transition:
+    opacity 200ms ease,
+    transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+[data-swapper-back] > .swapper-dialog-back {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-swapper-header] > [data-orientation] > div > [role="tablist"],
+  .swapper-dialog-back {
+    transition: none;
+  }
+}

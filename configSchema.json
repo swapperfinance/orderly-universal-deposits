@@ -1,0 +1,110 @@
+{
+  "type": "object",
+  "properties": {
+    "integratorId": {
+      "type": "string",
+      "title": "Swapper integrator id",
+      "description": "Your own Swapper integrator id: a dashboard with your deposit statistics, webhooks and other custom settings. Get one from the Swapper team at https://swapper.finance/sync. Leave empty to use the id Swapper configured for this plugin.",
+      "maxLength": 100
+    },
+    "destinationToken": {
+      "type": "string",
+      "title": "Default receive token",
+      "description": "Token credited to the Orderly account by default, e.g. USDC.",
+      "default": "USDC",
+      "maxLength": 20
+    },
+    "tokens": {
+      "type": "string",
+      "title": "Receive tokens",
+      "description": "Comma-separated allow-list for the receive-token picker, e.g. \"USDC,USDT,ETH\". Leave empty to list every Orderly collateral token.",
+      "maxLength": 500
+    },
+    "chainLogo": {
+      "type": "string",
+      "title": "Destination logo URL",
+      "description": "Logo the widget shows as the place the funds land. Leave empty to use your DEX logo (the img of appIcons, secondary then main). Absolute or page-relative http(s) URL, same-origin with your DEX or served with CORS headers; otherwise Orderly's logo shows.",
+      "maxLength": 2000
+    },
+    "chainName": {
+      "type": "string",
+      "title": "Destination name",
+      "description": "Name the widget shows as the place the funds land. Leave empty to use your broker name.",
+      "maxLength": 120
+    },
+    "depositMethods": {
+      "type": "string",
+      "title": "Deposit methods",
+      "description": "Comma-separated subset of walletDeposit, transferCrypto, depositWithCash, depositFromPolymarket, depositFromPerps. Leave empty for every method enabled for your integrator.",
+      "maxLength": 200
+    },
+    "minDepositUsd": {
+      "type": "number",
+      "title": "Minimum deposit (USD)",
+      "description": "Leave empty to use your integrator's minimum.",
+      "minimum": 0
+    },
+    "maxDepositUsd": {
+      "type": "number",
+      "title": "Maximum deposit (USD)",
+      "description": "Leave empty for no maximum.",
+      "minimum": 0
+    },
+    "themeMode": {
+      "type": "string",
+      "title": "Theme",
+      "description": "Widget theme. Leave empty to follow your DEX theme.",
+      "enum": [
+        "dark",
+        "light"
+      ]
+    },
+    "matchOrderlyTheme": {
+      "type": "boolean",
+      "title": "Match DEX theme",
+      "description": "Derive widget colours, surfaces and radius from your DEX theme and follow theme switches.",
+      "default": true
+    },
+    "primaryColor": {
+      "type": "string",
+      "title": "Primary colour",
+      "description": "Brand colour override, any CSS colour.",
+      "maxLength": 100
+    },
+    "height": {
+      "type": "number",
+      "title": "Initial widget height (px)",
+      "description": "Height of deposit-method screens until the widget reports its own.",
+      "default": 508,
+      "minimum": 200,
+      "maximum": 1200
+    },
+    "widgetPadding": {
+      "type": "number",
+      "title": "Widget padding (px)",
+      "description": "Padding inside the widget. The default lines the widget up with Orderly's form fields in the Deposit dialog.",
+      "default": 16,
+      "minimum": 0,
+      "maximum": 64
+    },
+    "preload": {
+      "type": "boolean",
+      "title": "Preload widget",
+      "description": "Load the widget in the background once a wallet connects, so Deposit opens instantly. Nothing loads before a wallet connects, and never on testnet. Off: the widget loads when Deposit is first opened.",
+      "default": true
+    },
+    "useHostWallet": {
+      "type": "boolean",
+      "title": "Use connected wallet",
+      "description": "Hand the EVM wallet connected to your DEX to the widget, so traders don't connect twice.",
+      "default": true
+    },
+    "injectStyles": {
+      "type": "boolean",
+      "title": "Inject stylesheet",
+      "description": "Add the plugin's stylesheet as a style tag. Turn off under a Content Security Policy that blocks inline styles, and load dist/styles.css instead.",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}
