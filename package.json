@@ -1,6 +1,6 @@
 {
   "name": "@swapper-finance/orderly-universal-deposits",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Orderly SDK plugin that makes Swapper the default deposit flow: fund an Orderly account from any chain, any token, a CEX or a card",
   "license": "MIT",
   "author": "Swapper Finance",
