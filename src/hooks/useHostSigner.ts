@@ -66,9 +66,20 @@ export function useHostSigner(enabled: boolean): {
             gas: toHex(args.gas),
           },
         ])) as string,
-      // Through Orderly, so the DEX's own connected-chain state stays in sync.
+      // Through Orderly where it can: for chains the DEX initialized, Onboard
+      // also adds a chain the wallet doesn't have yet. The widget may switch
+      // to a chain used only as a payment source (e.g. Polygon), which Orderly
+      // never initialised and Onboard rejects before touching the wallet — the
+      // case that surfaced as "Chain with chainId: 137 ... has not been set
+      // and must be added when Onboard is initialized." Switch the wallet
+      // provider directly then, like the SDK's own viem/ethers adapters;
+      // Onboard picks the change up from the wallet's chainChanged event.
       switchChain: async ({ id }) => {
-        await latest.current.setChain({ chainId: id });
+        try {
+          await latest.current.setChain({ chainId: id });
+        } catch {
+          await request("wallet_switchEthereumChain", [{ chainId: toHex(id) }]);
+        }
       },
       signMessage: async (args) => {
         const message = args.message as string | { raw: string };

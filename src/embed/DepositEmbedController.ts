@@ -11,6 +11,7 @@ import {
 import { PARKED_WIDGET_WIDTH } from "../constants";
 import { observeTheme, resolveStyles } from "../theme";
 import type { ResolvedSwapperDepositOptions } from "../types";
+import { deferDestinationLogo } from "./destinationLogo";
 
 /** Per-deposit values that change while the widget is alive. */
 export type DepositPatch = Pick<
@@ -87,9 +88,15 @@ export class DepositEmbedController {
     }
     if (typeof window === "undefined") return;
 
-    this.embed = preloadSwapperEmbed({
+    // The destination logo would overflow the iframe URL (see
+    // deferDestinationLogo): keep it out of the URL and post it on load.
+    const { initial, deferred } = deferDestinationLogo({
       ...baseConfig(this.options),
       ...patch,
+    });
+
+    this.embed = preloadSwapperEmbed({
+      ...initial,
       iframeUrl: this.options.iframeUrl,
       flexibleHeight: true,
       iframeAttributes: {
@@ -108,6 +115,12 @@ export class DepositEmbedController {
         this.listeners.forEach((l) => l(event));
       },
     });
+    if (deferred) {
+      this.embed.updateConfig({ customData: deferred });
+      // Send on the iframe's load event rather than after the update's
+      // debounce, so the widget paints with its logo already in place.
+      this.embed.getIframe().sendConfig();
+    }
     if (this.signer) this.embed.updateSigner(this.signer);
 
     if (this.options.matchOrderlyTheme) {

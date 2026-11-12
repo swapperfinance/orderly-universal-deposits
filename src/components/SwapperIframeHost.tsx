@@ -9,6 +9,7 @@ import {
   type TransactionSuccessPayload,
 } from "@swapper-finance/deposit-sdk";
 import type { DepositPatch } from "../embed/DepositEmbedController";
+import { deferDestinationLogo } from "../embed/destinationLogo";
 
 export type SwapperIframeHostProps = {
   /** Static config — read once at mount. */
@@ -39,9 +40,14 @@ export const SwapperIframeHost: FC<SwapperIframeHostProps> = (props) => {
   useEffect(() => {
     if (!containerRef.current) return;
     const p = latest.current;
-    const swapper = new SwapperIframe({
+    // The destination logo is too big for the iframe URL (see
+    // deferDestinationLogo): send it over postMessage once the iframe loads.
+    const { initial, deferred } = deferDestinationLogo({
       ...p.base,
       ...p.patch,
+    });
+    const swapper = new SwapperIframe({
+      ...initial,
       styles: p.styles,
       container: containerRef.current,
       iframeUrl: p.iframeUrl,
@@ -60,6 +66,12 @@ export const SwapperIframeHost: FC<SwapperIframeHostProps> = (props) => {
       },
     });
     swapperRef.current = swapper;
+    if (deferred) {
+      swapper.updateConfig({ customData: deferred });
+      // Send on the iframe's load event rather than after the update's
+      // debounce, so the widget paints with its logo already in place.
+      swapper.sendConfig();
+    }
     if (p.signer) swapper.updateSigner(p.signer);
     return () => {
       swapper.destroy();
