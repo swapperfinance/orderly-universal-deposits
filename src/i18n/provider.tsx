@@ -5,13 +5,18 @@ import {
   type AsyncResources,
 } from "@orderly.network/i18n";
 import { LocaleMessages } from "./module";
+import { translations } from "./translations";
 
 // Seed English before first render so keys never flash.
 preloadDefaultResource(LocaleMessages);
 
-// English only for now; every locale falls back to it. Add per-locale JSON
-// loaders here (see @orderly.network/onramper-plugin) when translations land.
-const resources: AsyncResources = () => Promise.resolve(LocaleMessages);
+// Bundled, not lazy-loaded: 11 short strings per language. Anything missing
+// (English, or a code Orderly adds later) falls back to English.
+const resources: AsyncResources = (lang) =>
+  Promise.resolve({
+    ...LocaleMessages,
+    ...translations[lang as keyof typeof translations],
+  });
 
 export const LocaleProvider: FC<PropsWithChildren> = (props) => (
   <ExternalLocaleProvider resources={resources}>
