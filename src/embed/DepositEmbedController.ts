@@ -20,6 +20,7 @@ export type DepositPatch = Pick<
   | "depositWalletAddress"
   | "minDepositUsd"
   | "customData"
+  | "language"
 >;
 
 export type DepositUiState = {
