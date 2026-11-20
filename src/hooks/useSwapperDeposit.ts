@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAccount, useConfig, useWalletConnector } from "@orderly.network/hooks";
-import { useTranslation } from "@orderly.network/i18n";
+import { useLocaleCode, useTranslation } from "@orderly.network/i18n";
 import { AccountStatusEnum, ChainNamespace, type NetworkId } from "@orderly.network/types";
 import { toast } from "@orderly.network/ui";
 import type { TransactionSuccessPayload } from "@swapper-finance/deposit-sdk";
@@ -39,6 +39,9 @@ export function useSwapperDeposit(
   const brokerId = useConfig("brokerId") as string;
   const brokerName = useConfig("brokerName") as string | undefined;
   const networkId = useConfig("networkId") as NetworkId;
+  // Orderly's codes match the widget's 1:1 ("tc" = Traditional Chinese is
+  // mapped by the widget); follows the DEX's language switcher live.
+  const language = useLocaleCode();
 
   const status = accountState.status;
   const hasOrderlyKey =
@@ -139,8 +142,9 @@ export function useSwapperDeposit(
       depositWalletAddress: walletAddress,
       minDepositUsd,
       customData,
+      language,
     };
-  }, [route, walletAddress, minDepositUsd, customData]);
+  }, [route, walletAddress, minDepositUsd, customData, language]);
   const patch = blocker ? undefined : walletPatch;
   // Keep the last good patch while a newly picked token resolves instead of
   // tearing the widget down — hiding it would send it back to its home screen.
@@ -190,6 +194,7 @@ function keyOf(patch: DepositPatch | undefined, brokerId: string): string {
         patch.dstChainId,
         patch.dstTokenAddr,
         patch.minDepositUsd,
+        patch.language,
         brokerId,
         // The logo may finish converting after the widget has loaded.
         (patch.customData as { destinationChainLogo?: string } | undefined)?.destinationChainLogo,

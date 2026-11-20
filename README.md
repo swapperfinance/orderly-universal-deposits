@@ -108,6 +108,8 @@ registerSwapperDepositPlugin({
 
 The widget matches your DEX theme (colours, surfaces, radius, light / dark) and follows theme switches live. Its back navigation sits in the dialog's Deposit / Withdraw tab row, so it feels native.
 
+It also speaks your DEX's language: all 20 languages Orderly ships, right-to-left included, following the language switcher live.
+
 ### Receive tokens
 
 The picker lists every collateral token Orderly supports, and Universal Deposits credits all of them:
