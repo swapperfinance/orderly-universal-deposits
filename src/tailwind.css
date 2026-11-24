@@ -39,9 +39,90 @@
   pointer-events: auto;
 }
 
+/*
+ * The dialog / sheet close button moves into the tab row (DialogHeader.tsx
+ * renders it there and clicks this one): hide Orderly's own while the header
+ * is inside. Mirrors NATIVE_CLOSE_SELECTOR.
+ */
+[role="dialog"]:has([data-swapper-header]) > .oui-dialog-close-btn,
+[role="dialog"]:has([data-swapper-header]) > .oui-sheet-close-btn {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-swapper-header] > [data-orientation] > div > [role="tablist"],
   .swapper-dialog-back {
     transition: none;
   }
+}
+
+/*
+ * Wallet switch menu in the dialog header (HeaderWallet.tsx). Plain rules
+ * rather than utilities: Orderly's DropdownMenuItem fixes its height (h-6)
+ * and paddings per size, and the two-line items need their own.
+ */
+.swapper-wallet-menu.swapper-wallet-menu {
+  min-width: 240px;
+  padding: 4px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.swapper-wallet-menu .swapper-wallet-item.swapper-wallet-item {
+  height: auto;
+  min-height: 48px;
+  padding: 8px 10px;
+  gap: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 16px;
+  color: rgb(var(--oui-color-base-foreground) / 0.98);
+  background: transparent;
+}
+.swapper-wallet-menu .swapper-wallet-item.swapper-wallet-item:hover,
+.swapper-wallet-menu .swapper-wallet-item.swapper-wallet-item:focus,
+.swapper-wallet-menu .swapper-wallet-item.swapper-wallet-item[data-highlighted] {
+  background: rgb(var(--oui-color-base-5));
+  color: rgb(var(--oui-color-base-foreground) / 0.98);
+}
+.swapper-wallet-menu .swapper-wallet-item[data-current] {
+  background: rgb(var(--oui-color-base-6));
+}
+.swapper-wallet-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+.swapper-wallet-icon > * {
+  width: 24px !important;
+  height: 24px !important;
+}
+.swapper-wallet-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+.swapper-wallet-title {
+  font-weight: 600;
+}
+.swapper-wallet-sub {
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 14px;
+  color: rgb(var(--oui-color-base-foreground) / 0.36);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.swapper-wallet-check {
+  display: flex;
+  flex: none;
+  color: rgb(var(--oui-color-primary-light));
 }

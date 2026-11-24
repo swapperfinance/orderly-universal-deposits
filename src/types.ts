@@ -48,9 +48,9 @@ export interface SwapperDepositPluginOptions {
   chainName?: string;
   /**
    * Tokens listed in the picker — array or comma-separated string (e.g.
-   * "USDC,USDT,ETH"). Default: every collateral token Orderly supports. Tokens
-   * Swapper can't credit yet are listed as "Soon"; tokens of the other
-   * network's account offer a network switch.
+   * "USDC,USDT,ETH"). Default: every collateral token Orderly supports on the
+   * connected wallet's network (SOL, USDC and USDT for a Solana wallet).
+   * Tokens Swapper can't credit yet are listed as "Soon".
    */
   tokens?: string[] | string;
 

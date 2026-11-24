@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 const LOGO_SIZE = 64;
 
 const cache = new Map<string, Promise<string | undefined>>();
+/** Settled results, by URL: read on first render, so a remount has the logo at once. */
+const resolved = new Map<string, string | undefined>();
 
 /**
  * The destination logo as a small PNG `data:` URL. The Swapper widget's
@@ -28,6 +30,7 @@ export function logoDataUrl(url: string | undefined): Promise<string | undefined
       );
       return undefined;
     });
+    promise.then((dataUrl) => resolved.set(url, dataUrl));
     cache.set(url, promise);
   }
   return promise;
@@ -62,15 +65,32 @@ function rasterize(url: string): Promise<string> {
   });
 }
 
-/** `logoDataUrl` for render: `undefined` until ready (cached results are immediate). */
+/** Already known without waiting: a data: URL as is, or a settled result. */
+function knownDataUrl(url: string | undefined): { known: boolean; dataUrl?: string } {
+  if (!url) return { known: true };
+  if (url.startsWith("data:image/")) return { known: true, dataUrl: url };
+  return resolved.has(url) ? { known: true, dataUrl: resolved.get(url) } : { known: false };
+}
+
+/**
+ * `logoDataUrl` for render: `undefined` until ready. A logo resolved before
+ * (the preload) is there on the first render: the Deposit dialog's form mounts
+ * fresh on every open, and a logo arriving a render later changed the
+ * widget's config twice, redrawing its screen.
+ */
 export function useLogoDataUrl(url: string | undefined): string | undefined {
-  const [state, setState] = useState<{ url?: string; dataUrl?: string }>({});
+  const [state, setState] = useState<{ url?: string; dataUrl?: string }>(() => ({
+    url,
+    dataUrl: knownDataUrl(url).dataUrl,
+  }));
   useEffect(() => {
+    if (knownDataUrl(url).known) return;
     let current = true;
     void logoDataUrl(url).then((dataUrl) => current && setState({ url, dataUrl }));
     return () => {
       current = false;
     };
   }, [url]);
-  return state.url === url ? state.dataUrl : undefined;
+  if (state.url === url) return state.dataUrl;
+  return knownDataUrl(url).dataUrl;
 }

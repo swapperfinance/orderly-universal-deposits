@@ -3,6 +3,7 @@ import { createInterceptor } from "@orderly.network/plugin-core";
 import type { ApplicationState, OrderlySDK } from "@orderly.network/plugin-core";
 import { DialogHeader } from "./components/DialogHeader";
 import { PreloadOnConnect } from "./components/PreloadOnConnect";
+import { ReopenDepositAfterSetup } from "./walletSwitch";
 import { SwapperDepositForm } from "./components/SwapperDepositForm";
 import { PLUGIN_ID, PLUGIN_VERSION } from "./constants";
 import { DepositEmbedController } from "./embed/DepositEmbedController";
@@ -77,29 +78,20 @@ export function registerSwapperDepositPlugin(rawOptions: SwapperDepositPluginOpt
         )),
         // Orderly's account menu (desktop top bar, mobile account button) is
         // on screen app-wide: wrapped, untouched, it hosts the preload, which
-        // waits for a connected wallet so the Deposit dialog opens instantly.
-        ...(options.preload
-          ? [
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              createInterceptor("Account.AccountMenu" as any, (Original, props: Record<string, unknown>) => (
-                <>
-                  <LocaleProvider>
-                    <PreloadOnConnect controller={controller} options={formOptions} />
-                  </LocaleProvider>
-                  <Original {...props} />
-                </>
-              )),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              createInterceptor("Account.MobileAccountMenu" as any, (Original, props: Record<string, unknown>) => (
-                <>
-                  <LocaleProvider>
-                    <PreloadOnConnect controller={controller} options={formOptions} />
-                  </LocaleProvider>
-                  <Original {...props} />
-                </>
-              )),
-            ]
-          : []),
+        // waits for a connected wallet so the Deposit dialog opens instantly,
+        // and reopens the dialog after a wallet switch started in its header.
+        ...(["Account.AccountMenu", "Account.MobileAccountMenu"] as const).map((target) =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          createInterceptor(target as any, (Original, props: Record<string, unknown>) => (
+            <>
+              <LocaleProvider>
+                {options.preload && <PreloadOnConnect controller={controller} options={formOptions} />}
+                <ReopenDepositAfterSetup />
+              </LocaleProvider>
+              <Original {...props} />
+            </>
+          )),
+        ),
       ],
     });
   };

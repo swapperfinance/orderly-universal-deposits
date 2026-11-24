@@ -10,7 +10,6 @@ import {
   Text,
   TokenIcon,
 } from "@orderly.network/ui";
-import { SolanaChains } from "@orderly.network/types";
 import type { ReceiveToken } from "../hooks/useDestination";
 
 /**
@@ -53,9 +52,8 @@ export type TokenPickerProps = {
 /**
  * "Receive token" — the token credited to the Orderly account. Lists every
  * collateral token Orderly supports; the settlement chain is picked
- * automatically, so no chain is shown. Tokens credited on the other network
- * (SOL with an EVM wallet) switch the wallet there; tokens without a
- * settlement route yet are listed but disabled.
+ * automatically, so no chain is shown. Only the connected wallet's network's
+ * tokens are listed; those without a settlement route yet are disabled.
  */
 export const TokenPicker: FC<TokenPickerProps> = ({ tokens, value, onChange }) => {
   const { t: t0 } = useTranslation();
@@ -106,7 +104,7 @@ export const TokenPicker: FC<TokenPickerProps> = ({ tokens, value, onChange }) =
         >
           {tokens.map((token) => {
             const selected = token.symbol === value?.symbol;
-            const disabled = !token.route && !token.switchChainId;
+            const disabled = !token.route;
             return (
               <DropdownMenuItem
                 key={token.symbol}
@@ -124,15 +122,9 @@ export const TokenPicker: FC<TokenPickerProps> = ({ tokens, value, onChange }) =
                 <span className="oui-flex-1 oui-font-semibold oui-text-base-contrast-80">
                   {token.symbol}
                 </span>
-                {disabled || token.switchChainId ? (
+                {disabled ? (
                   <span className="oui-rounded oui-bg-base-4 oui-px-1.5 oui-py-0.5 oui-text-2xs oui-text-base-contrast-54">
-                    {t(
-                      disabled
-                        ? "swapperDeposits.soon"
-                        : SolanaChains.has(token.switchChainId!)
-                          ? "swapperDeposits.switchToSolana"
-                          : "swapperDeposits.switchToEvm",
-                    )}
+                    {t("swapperDeposits.soon")}
                   </span>
                 ) : (
                   selected && <Check />

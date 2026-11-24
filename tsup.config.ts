@@ -17,7 +17,9 @@ export default defineConfig((options) => ({
   clean: !options.watch,
   dts: true,
   tsconfig: "tsconfig.json",
-  external: ["react", "react-dom", /^react\//, /^@orderly\.network\//],
+  // @solana/web3.js comes from the host: every Orderly app with Solana
+  // wallets already ships it (@orderly.network/wallet-connector depends on it).
+  external: ["react", "react-dom", /^react\//, /^@orderly\.network\//, "@solana/web3.js"],
   // The stylesheet is built first (build:css) and bundled as a string, which
   // the plugin injects at runtime (src/styles.ts).
   loader: { ".css": "text" },

@@ -26,11 +26,19 @@ export const PreloadOnConnect: FC<Props> = (props) => {
 };
 
 const Preloader: FC<Props> = ({ controller, options }) => {
-  const { walletPatch, walletPatchKey } = useSwapperDeposit(options, controller.tokenMemory);
+  const { walletPatch, walletPatchKey, signer, signerKey } = useSwapperDeposit(
+    options,
+    controller.tokenMemory,
+  );
   useEffect(() => {
     if (walletPatch) controller.preload(walletPatch);
     // walletPatchKey tracks every value that matters to the widget.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controller, walletPatchKey]);
+  // Hand the wallet over while preloading, so the widget opens with it
+  // (Home with the wallet's card) instead of picking it up on first show.
+  useEffect(() => {
+    controller.setSigner(signerKey, signer);
+  }, [controller, signerKey, signer]);
   return null;
 };

@@ -54,8 +54,8 @@ export const NATIVE_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
  * destination (xswap-backend's ORDERLY_LISTED_TOKENS: Arbitrum's where its
  * Vault has the token, else the home chain's; BNB as WBNB, the native address
  * being ETH's). A snapshot: the live list comes from Swapper's API
- * (fetchCreditableTokens), this is what the picker uses until it loads or if
- * it fails. The rest of Orderly's list shows "Soon".
+ * (fetchCreditableTokens), this is what the picker shows until that request
+ * succeeds. The rest of Orderly's list shows "Soon".
  */
 export const SWAPPER_ORDERLY_TOKENS: Record<string, string> = {
   USDC: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
@@ -69,12 +69,15 @@ export const SWAPPER_ORDERLY_TOKENS: Record<string, string> = {
   OKB: "0xe538905cf8410324e03a5a23c1c177a474d59b2b",
 };
 /**
- * What Swapper credits to the Orderly account of a Solana wallet: native SOL,
- * from a Solana wallet straight into Orderly's Solana Vault (the widget offers
- * such an account wallet deposits only). Swapper's address for native SOL.
+ * What Swapper credits to the Orderly account of a Solana wallet, from a
+ * Solana wallet straight into Orderly's Solana Vault (the widget offers such
+ * an account wallet deposits only): native SOL (Swapper's address for it),
+ * USDC and USDT (their Solana mints).
  */
 export const SWAPPER_ORDERLY_SOLANA_TOKENS: Record<string, string> = {
   SOL: "So11111111111111111111111111111111111111111",
+  USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  USDT: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
 };
 /**
  * Widget height on deposit-method pages: the widget's fixed 560px minus its

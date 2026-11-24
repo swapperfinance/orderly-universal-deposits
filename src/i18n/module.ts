@@ -4,9 +4,15 @@ export const LocaleMessages = {
   "swapperDeposits.receiveToken": "Receive token",
   "swapperDeposits.receiveTokenHint": "Credited to your account",
   "swapperDeposits.soon": "Soon",
-  "swapperDeposits.switchToSolana": "Switch to Solana",
-  "swapperDeposits.switchToEvm": "Switch to EVM",
   "swapperDeposits.back": "Back",
+  "swapperDeposits.close": "Close",
+
+  // Dialog header: the wallet the deposit comes from
+  "swapperDeposits.wallet.label": "Your Web3 Wallet",
+  "swapperDeposits.wallet.evm": "EVM wallet",
+  "swapperDeposits.wallet.solana": "Solana wallet",
+  "swapperDeposits.wallet.connect": "Connect a wallet",
+  "swapperDeposits.wallet.switchFailed": "Couldn't switch the wallet",
 
   // Standalone widget only — the dialog falls back to Orderly's own form.
   "swapperDeposits.connectWallet": "Connect your wallet to deposit with Swapper.",

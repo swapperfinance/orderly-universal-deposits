@@ -53,12 +53,20 @@ export function baseConfig(options: ResolvedSwapperDepositOptions) {
 export class DepositEmbedController {
   private embed?: SwapperEmbed;
   private slot?: HTMLElement;
+  /**
+   * A hidden placeholder in the open dialog's header (DialogHeader). While
+   * the dialog stays open, the widget parks on it between tabs instead of
+   * closing (see hide()).
+   */
+  private parkTarget?: HTMLElement;
   private signerKey?: string;
   /** Latest host wallet, kept until the widget exists to receive it. */
   private signer: AnySigner | null = null;
   private listeners = new Set<(event: SwapperEvent) => void>();
   private teardown: Array<() => void> = [];
   private selectedToken?: string;
+  /** The patch the widget has (JSON), so an unchanged one isn't re-sent. */
+  private sentPatch?: string;
   private navigation: NavigationStatePayload | null = null;
   private ui: DepositUiState = { visible: false, navigation: null };
   private uiListeners = new Set<() => void>();
@@ -88,6 +96,7 @@ export class DepositEmbedController {
     }
     if (typeof window === "undefined") return;
 
+    this.sentPatch = JSON.stringify(patch);
     this.embed = preloadSwapperEmbed({
       ...baseConfig(this.options),
       ...patch,
@@ -137,12 +146,44 @@ export class DepositEmbedController {
     if (iframe) iframe.style.pointerEvents = "auto";
   }
 
-  /** Hides the widget (it stays loaded and returns to its home screen). */
+  /**
+   * The slot left the screen. While the dialog is still open (the user went
+   * to the Withdraw tab) the widget parks, invisible and keeping its state,
+   * so coming back to Deposit doesn't redraw it or reload its tokens.
+   * Otherwise it closes: it stays loaded and returns to its home screen.
+   */
   hide(slot: HTMLElement): void {
     if (this.slot !== slot) return; // a newer slot already took over
     this.slot = undefined;
-    this.embed?.hide();
+    if (this.parkTarget?.isConnected) this.park(this.parkTarget);
+    else this.embed?.hide();
     this.emitUi();
+  }
+
+  /** The dialog opened: where the widget waits between tabs. */
+  setParkTarget(el: HTMLElement): void {
+    this.parkTarget = el;
+  }
+
+  /** The dialog closed: a parked widget closes for real (back to its home screen). */
+  releaseParkTarget(el: HTMLElement): void {
+    if (this.parkTarget !== el) return;
+    this.parkTarget = undefined;
+    if (!this.slot) this.embed?.hide();
+  }
+
+  /**
+   * Keeps the widget "shown" (the SDK sends no close, so the widget keeps its
+   * screen) over a visibility-hidden target, which the SDK mirrors fully
+   * transparent and non-interactive.
+   */
+  private park(target: HTMLElement): void {
+    if (!this.embed) return;
+    this.embed.showIn(target);
+    // show() lets the iframe take clicks under Radix's body lock; parked, it
+    // must not, or it would block the header it sits behind.
+    const iframe = this.iframeElement();
+    if (iframe) iframe.style.pointerEvents = "none";
   }
 
   /**
@@ -166,8 +207,16 @@ export class DepositEmbedController {
     this.uiListeners.forEach((l) => l());
   }
 
-  /** Patches the live widget without reloading it (token / address change). */
+  /**
+   * Patches the live widget without reloading it (token / address change).
+   * An unchanged patch isn't sent: the widget re-initialises on every config
+   * message, which on each dialog open (show() passes the current patch)
+   * redrew its screen and reloaded the token list.
+   */
   update(patch: DepositPatch): void {
+    const json = JSON.stringify(patch);
+    if (json === this.sentPatch) return;
+    this.sentPatch = json;
     this.embed?.updateConfig(patch);
   }
 
@@ -202,6 +251,7 @@ export class DepositEmbedController {
     this.teardown = [];
     this.embed?.destroy();
     this.embed = undefined;
+    this.sentPatch = undefined;
     this.signerKey = undefined;
     this.signer = null;
   }

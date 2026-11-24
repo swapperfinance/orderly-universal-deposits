@@ -61,7 +61,8 @@
     "@orderly.network/types": ">=3.0.0",
     "@orderly.network/ui": ">=3.0.0",
     "react": ">=18",
-    "react-dom": ">=18"
+    "react-dom": ">=18",
+    "@solana/web3.js": ">=1.95.0"
   },
   "devDependencies": {
     "@orderly.network/hooks": "3.2.2",
@@ -69,7 +70,8 @@
     "@orderly.network/plugin-core": "3.2.2",
     "@orderly.network/types": "3.2.2",
     "@orderly.network/ui": "3.2.2",
-    "@swapper-finance/deposit-sdk": "^0.5.11",
+    "@solana/web3.js": "1.98.4",
+    "@swapper-finance/deposit-sdk": "^0.6.0",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
     "react": "^18.3.1",
@@ -83,5 +85,10 @@
     "onlyBuiltDependencies": [
       "esbuild"
     ]
+  },
+  "peerDependenciesMeta": {
+    "@solana/web3.js": {
+      "optional": true
+    }
   }
 }

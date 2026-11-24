@@ -17,7 +17,7 @@
     "tokens": {
       "type": "string",
       "title": "Receive tokens",
-      "description": "Comma-separated allow-list for the receive-token picker, e.g. \"USDC,USDT,ETH\". Leave empty to list every Orderly collateral token.",
+      "description": "Comma-separated allow-list for the receive-token picker, e.g. \"USDC,USDT,ETH\". Leave empty to list every Orderly collateral token on the connected wallet's network (EVM or Solana).",
       "maxLength": 500
     },
     "chainLogo": {
