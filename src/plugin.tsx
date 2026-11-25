@@ -3,7 +3,6 @@ import { createInterceptor } from "@orderly.network/plugin-core";
 import type { ApplicationState, OrderlySDK } from "@orderly.network/plugin-core";
 import { DialogHeader } from "./components/DialogHeader";
 import { PreloadOnConnect } from "./components/PreloadOnConnect";
-import { ReopenDepositAfterSetup } from "./walletSwitch";
 import { SwapperDepositForm } from "./components/SwapperDepositForm";
 import { PLUGIN_ID, PLUGIN_VERSION } from "./constants";
 import { DepositEmbedController } from "./embed/DepositEmbedController";
@@ -25,7 +24,8 @@ import type { SwapperDepositPluginOptions } from "./types";
  * itself (its logo and broker name, detected from OrderlyAppProvider) as the
  * destination. The widget's back navigation lives in the dialog's tab row.
  * Orderly's native form is used as the fallback when Swapper can't serve the
- * account (testnet, sub-accounts, trading not enabled).
+ * account (testnet, sub-accounts); an account that isn't set up yet goes
+ * through Orderly's own account setup.
  *
  * @example
  * <OrderlyAppProvider plugins={[registerSwapperDepositPlugin()]} … />
@@ -78,20 +78,20 @@ export function registerSwapperDepositPlugin(rawOptions: SwapperDepositPluginOpt
         )),
         // Orderly's account menu (desktop top bar, mobile account button) is
         // on screen app-wide: wrapped, untouched, it hosts the preload, which
-        // waits for a connected wallet so the Deposit dialog opens instantly,
-        // and reopens the dialog after a wallet switch started in its header.
-        ...(["Account.AccountMenu", "Account.MobileAccountMenu"] as const).map((target) =>
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          createInterceptor(target as any, (Original, props: Record<string, unknown>) => (
-            <>
-              <LocaleProvider>
-                {options.preload && <PreloadOnConnect controller={controller} options={formOptions} />}
-                <ReopenDepositAfterSetup />
-              </LocaleProvider>
-              <Original {...props} />
-            </>
-          )),
-        ),
+        // waits for a connected wallet so the Deposit dialog opens instantly.
+        ...(options.preload
+          ? (["Account.AccountMenu", "Account.MobileAccountMenu"] as const).map((target) =>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              createInterceptor(target as any, (Original, props: Record<string, unknown>) => (
+                <>
+                  <LocaleProvider>
+                    <PreloadOnConnect controller={controller} options={formOptions} />
+                  </LocaleProvider>
+                  <Original {...props} />
+                </>
+              )),
+            )
+          : []),
       ],
     });
   };

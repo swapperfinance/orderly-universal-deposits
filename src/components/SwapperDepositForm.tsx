@@ -1,6 +1,4 @@
 import { ComponentType, FC, useEffect, useLayoutEffect, useRef } from "react";
-import { useAccount } from "@orderly.network/hooks";
-import { AccountStatusEnum } from "@orderly.network/types";
 import { Flex, Spinner, useScreen } from "@orderly.network/ui";
 import { WidgetEventName, type TransactionSuccessPayload } from "@swapper-finance/deposit-sdk";
 import { FORM_MARKER_ATTR } from "../constants";
@@ -103,10 +101,10 @@ export type SwapperDepositFormProps = {
  * Replaces the form inside the "Deposit" tab of Orderly's Deposit / Withdraw
  * dialog: receive-token picker + the preloaded Swapper widget, nothing else.
  * Falls back to Orderly's own form whenever Swapper can't serve the account
- * (testnet, sub-accounts, no wallet). An account that isn't set up yet goes
- * through Orderly's own account setup instead, and comes back here after.
+ * (testnet, sub-accounts). An account that isn't set up yet goes through
+ * Orderly's own account setup instead; with no wallet the dialog closes.
  *
- * The widget's navigation lives in the dialog header (see DialogBackButton).
+ * The widget's navigation lives in the dialog header (see DialogHeader).
  */
 export const SwapperDepositForm: FC<SwapperDepositFormProps> = ({
   controller,
@@ -123,19 +121,14 @@ export const SwapperDepositForm: FC<SwapperDepositFormProps> = ({
 
   // Not set up yet (no account, not signed in, trading disabled): Orderly's
   // own setup modal (create account / enable trading) rather than Orderly's
-  // deposit form; the Deposit dialog closes for it and reopens once trading
-  // is enabled.
-  const { account } = useAccount();
+  // deposit form. The Deposit dialog closes for it; once set up, the user
+  // opens Deposit again.
   const { isMobile } = useScreen();
   const needsSetup = state.blocker === "enableTrading";
   const setupStatus = state.status;
   useEffect(() => {
     if (!needsSetup) return;
-    startAccountSetupForDeposit({
-      status: setupStatus,
-      isMobile,
-      getStatus: () => account.stateValue.status as AccountStatusEnum,
-    });
+    startAccountSetupForDeposit({ status: setupStatus, isMobile });
     // Once per time the form lands on an account that needs it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsSetup]);

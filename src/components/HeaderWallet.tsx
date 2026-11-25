@@ -1,11 +1,13 @@
-import { FC, useState } from "react";
-import { useWalletConnector } from "@orderly.network/hooks";
+import { FC, useEffect, useState } from "react";
+import { useChains, useConfig, useWalletConnector } from "@orderly.network/hooks";
 import { useTranslation } from "@orderly.network/i18n";
 import {
   ChainNamespace,
   ETHEREUM_MAINNET_CHAINID,
   SOLANA_MAINNET_CHAINID,
+  SolanaChains,
   isWalletChainChangePendingResult,
+  type NetworkId,
 } from "@orderly.network/types";
 import {
   ChainIcon,
@@ -54,12 +56,31 @@ const CheckIcon = () => (
   </svg>
 );
 
+/**
+ * The networks this DEX offers wallets on, read from the chains it's set up
+ * with (Orderly's chain list after the app's chain filter) — as Orderly's own
+ * wallet connector decides whether to offer Solana wallets at all.
+ */
+function useEcosystems(): Record<Ecosystem, boolean> {
+  const networkId = useConfig("networkId") as NetworkId;
+  const [networkInfos] = useChains(networkId, { pick: "network_infos" });
+  const found = { evm: false, solana: false };
+  for (const info of networkInfos ?? []) {
+    const chainId = Number((info as { chain_id?: number | string })?.chain_id);
+    if (!chainId) continue;
+    if (SolanaChains.has(chainId)) found.solana = true;
+    else found.evm = true;
+  }
+  return found;
+}
+
 const shortAddress = (address: string) =>
   address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address;
 
 /**
  * The wallet the deposit comes from, in the dialog header: its logo (the
- * address is in the tooltip and the menu), and a menu to switch between an EVM and a Solana wallet. The
+ * address is in the tooltip and the menu), and — when the DEX offers wallets
+ * on both networks — a menu to switch between an EVM and a Solana wallet. The
  * Swapper widget pays from the host's wallet only, so this is where the user
  * changes it — the same way Orderly's own deposit form does, by asking the
  * wallet connector for a chain on the other network: it switches straight
@@ -72,11 +93,20 @@ export const HeaderWallet: FC = () => {
   const { wallet, namespace, setChain } = useWalletConnector();
   const [switching, setSwitching] = useState(false);
   const { isMobile } = useScreen();
+  const ecosystems = useEcosystems();
 
   const address = wallet?.accounts?.[0]?.address;
-  if (!address) return null;
   const current: Ecosystem = namespace === ChainNamespace.solana ? "solana" : "evm";
-  seenWallets[current] = { label: wallet?.label ?? "", address };
+  const label = wallet?.label ?? "";
+  useEffect(() => {
+    if (address) seenWallets[current] = { label, address };
+  }, [current, label, address]);
+
+  if (!address) return null;
+  // Both networks only when the DEX offers wallets on both: an EVM-only DEX
+  // has no Solana wallet to switch to (and the reverse).
+  const other: Ecosystem = current === "solana" ? "evm" : "solana";
+  const canSwitch = ecosystems[other];
 
   const switchTo = async (target: Ecosystem) => {
     if (target === current || switching) return;
@@ -113,8 +143,8 @@ export const HeaderWallet: FC = () => {
   };
 
   const option = (ecosystem: Ecosystem) => {
-    const seen = seenWallets[ecosystem];
     const isCurrent = ecosystem === current;
+    const seen = isCurrent ? { label, address } : seenWallets[ecosystem];
     return (
       <DropdownMenuItem
         key={ecosystem}
@@ -146,6 +176,24 @@ export const HeaderWallet: FC = () => {
     );
   };
 
+  const chipClass =
+    "oui-flex oui-h-full oui-items-center oui-gap-1.5 oui-rounded-md oui-bg-base-6 oui-px-2 oui-text-2xs oui-text-base-contrast-54";
+  const logo = <WalletIcon name={label} size={isMobile ? "xs" : "2xs"} />;
+
+  // One network only: the wallet's logo, nothing to switch to.
+  if (!canSwitch) {
+    return (
+      <span
+        role="img"
+        aria-label={t("swapperDeposits.wallet.label")}
+        title={`${t("swapperDeposits.wallet.label")}: ${address}`}
+        className={chipClass}
+      >
+        {logo}
+      </span>
+    );
+  }
+
   return (
     <DropdownMenuRoot>
       <DropdownMenuTrigger asChild>
@@ -154,9 +202,9 @@ export const HeaderWallet: FC = () => {
           disabled={switching}
           aria-label={t("swapperDeposits.wallet.label")}
           title={`${t("swapperDeposits.wallet.label")}: ${address}`}
-          className="oui-flex oui-h-full oui-items-center oui-gap-1.5 oui-rounded-md oui-bg-base-6 oui-px-2 oui-text-2xs oui-text-base-contrast-54 hover:oui-bg-base-5 hover:oui-text-base-contrast disabled:oui-opacity-60"
+          className={`${chipClass} hover:oui-bg-base-5 hover:oui-text-base-contrast disabled:oui-opacity-60`}
         >
-          <WalletIcon name={wallet?.label ?? ""} size={isMobile ? "xs" : "2xs"} />
+          {logo}
           <ChevronIcon />
         </button>
       </DropdownMenuTrigger>

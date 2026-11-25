@@ -203,7 +203,7 @@ export const DialogHeader: FC<PropsWithChildren<{ controller: DepositEmbedContro
   // The wallet disconnected with the dialog open: nothing left to deposit
   // from or withdraw to — close it, as its own close button would. Not while
   // a wallet switch started in the header is under way (a connector may drop
-  // the old wallet before the new one connects; the dialog reopens after).
+  // the old wallet before the new one connects).
   const { state: accountState } = useAccount();
   const { wallet } = useWalletConnector();
   const disconnected =
