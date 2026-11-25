@@ -102,7 +102,7 @@ registerSwapperDepositPlugin({
 ## What traders see
 
 1. They click **Deposit**. The dialog opens instantly, because the widget was preloaded in the background when they connected their wallet.
-2. They pick the token to be credited: every collateral token Orderly supports, Solana included.
+2. They pick the token to be credited: the collateral tokens Orderly takes on their wallet's network (EVM or Solana).
 3. They choose how to pay: connected wallet (the one already connected to Orderly, no second connect), crypto transfer / CEX withdrawal, card or bank, or funds on Polymarket and other perp venues.
 4. Swapper swaps, bridges or on-ramps, deposits into Orderly's Vault for their wallet under **your broker**, and the balance appears in their account.
 
@@ -112,14 +112,14 @@ It also speaks your DEX's language: all 20 languages Orderly ships, right-to-lef
 
 ### Receive tokens
 
-The picker lists every collateral token Orderly supports, and Universal Deposits credits all of them:
+The picker lists the collateral tokens Orderly takes on the connected wallet's network. EVM and Solana wallets have separate Orderly accounts, so each wallet only sees its own account's tokens:
 
-| Account type | Tokens credited |
-|---|---|
-| EVM wallet | USDC, USDT, USDG, ETH, BNB, WBTC, OKB, YUSD, USD1 |
-| Solana wallet | SOL, paid from a Solana wallet straight into Orderly's Solana Vault |
+| Account type | Tokens listed | Credited by Universal Deposits |
+|---|---|---|
+| EVM wallet | USDC, USDT, USDG, ETH, BNB, WBTC, OKB, YUSD, USD1 | all of them |
+| Solana wallet | SOL, USDC, USDT | all of them, paid from a Solana wallet straight into Orderly's Solana Vault (other Solana tokens are swapped on the way) |
 
-The list is read from Swapper's API at load, so a token Orderly adds shows up without a plugin update. Picking a token that belongs to the other network's account (SOL with an EVM wallet, or the reverse) switches the wallet through Orderly's own network switch. Use `tokens` to narrow the list and `destinationToken` to choose the default.
+Both lists are read at load (Orderly's token list and Swapper's API), so a token Orderly adds or Swapper starts crediting shows up without a plugin update. Use `tokens` to narrow the list and `destinationToken` to choose the default.
 
 ## Extras
 
@@ -209,8 +209,8 @@ The widget is served from Swapper's origin in an iframe, so allow it in `frame-s
 | Target | What the plugin does |
 |---|---|
 | `Deposit.DepositForm` | Replaced by the receive-token picker and the Swapper widget (on testnet, Orderly's default deposit form). |
-| `Transfer.DepositAndWithdraw` | Wrapped, never replaced: adds the widget's back arrow to the Deposit / Withdraw tab row. The Withdraw tab is untouched. |
-| `Account.AccountMenu`, `Account.MobileAccountMenu` | Wrapped, never replaced, nothing visible: preloads the widget once a wallet connects (only with `preload` on). |
+| `Transfer.DepositAndWithdraw` | Wrapped, never replaced: adds the widget's back arrow, the paying wallet (with the EVM / Solana switch when the DEX offers both) and the close button to the Deposit / Withdraw tab row. The Withdraw tab is untouched. |
+| `Account.AccountMenu`, `Account.MobileAccountMenu`, `Layout.MainMenus` | Wrapped, never replaced, nothing visible: preloads the widget once a wallet connects (only with `preload` on). The account menus' wrappers also wrap a wallet connector's own menus (Privy's replaces both), so the preload works with any connector, on desktop and mobile. |
 
 Other plugins that wrap the same targets keep working.
 

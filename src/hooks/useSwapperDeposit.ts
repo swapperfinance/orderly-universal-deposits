@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAccount, useConfig, useWalletConnector } from "@orderly.network/hooks";
+import { useAccount, useConfig } from "@orderly.network/hooks";
 import { useLocaleCode, useTranslation } from "@orderly.network/i18n";
-import { AccountStatusEnum, ChainNamespace, type NetworkId } from "@orderly.network/types";
+import { AccountStatusEnum, type NetworkId } from "@orderly.network/types";
 import { toast } from "@orderly.network/ui";
 import type { TransactionSuccessPayload } from "@swapper-finance/deposit-sdk";
 import { PLUGIN_ID, SWAPPER_ORDERLY_CHAIN_ID } from "../constants";
@@ -10,6 +10,7 @@ import { useLogoDataUrl } from "../logo";
 import type { ResolvedSwapperDepositOptions } from "../types";
 import { useReceiveTokens } from "./useDestination";
 import { useHostSigner } from "./useHostSigner";
+import { useSettledWallet } from "./useSettledWallet";
 
 /**
  * Why Swapper can't take over for this account right now. The dialog form
@@ -35,7 +36,7 @@ export function useSwapperDeposit(
 ) {
   const { t } = useTranslation();
   const { state: accountState, isSubAccount } = useAccount();
-  const { namespace, setChain } = useWalletConnector();
+  const { address: settledAddress, isSolana, settling } = useSettledWallet();
   const brokerId = useConfig("brokerId") as string;
   const brokerName = useConfig("brokerName") as string | undefined;
   const networkId = useConfig("networkId") as NetworkId;
@@ -47,9 +48,10 @@ export function useSwapperDeposit(
   const hasOrderlyKey =
     status === AccountStatusEnum.EnableTrading ||
     status === AccountStatusEnum.EnableTradingWithoutConnected;
-  const isSolana = namespace === ChainNamespace.solana;
 
-  // A Solana wallet's account takes SOL only (SWAPPER_ORDERLY_SOLANA_TOKENS).
+  // Only the tokens of the connected wallet's network: a Solana wallet's
+  // account is funded with SOL / USDC / USDT, an EVM wallet's with the EVM
+  // collateral. Depositing to the other network's account is Orderly's own flow.
   const { tokens, isLoading: tokensLoading } = useReceiveTokens({
     tokens: options.tokens,
     solana: isSolana,
@@ -75,38 +77,24 @@ export function useSwapperDeposit(
     [creditable, selected],
   );
   const route = token?.route;
-  // A token picked from the other network's list (SOL with an EVM wallet):
-  // selected once the wallet has switched there and can take it.
-  const [pending, setPending] = useState<string>();
+  // A remembered pick the account's network doesn't offer (e.g. SOL after
+  // switching to an EVM wallet) falls back to the first creditable token.
   useEffect(() => {
-    if (pending && creditable?.some((x) => x.symbol === pending)) {
-      setPending(undefined);
-      setSelected(pending);
-    } else if (token && token.symbol !== selected) setSelected(token.symbol);
-  }, [token, selected, pending, creditable]);
-  const selectToken = useCallback(
-    (symbol: string) => {
-      const chainId = tokens?.find((x) => x.symbol === symbol)?.switchChainId;
-      if (!chainId) {
-        setPending(undefined);
-        setSelected(symbol);
-        return;
-      }
-      // Orderly's own network switch: connects the other network's wallet.
-      // It closes the dialog, so remember the pick beyond this component too.
-      setPending(symbol);
-      tokenMemory?.set(symbol);
-      Promise.resolve(setChain({ chainId })).catch(() => setPending(undefined));
-    },
-    [tokens, setChain, setSelected, tokenMemory],
-  );
+    if (token && token.symbol !== selected) setSelected(token.symbol);
+  }, [token, selected, setSelected]);
 
   // ---- gating -------------------------------------------------------------
   let blocker: SwapperDepositBlocker | undefined;
   // Swapper's orderly destination is Orderly's mainnet Vault: on testnet it
   // would credit the wallet's mainnet account, not the testnet one.
   if (networkId !== "mainnet") blocker = "unsupportedNetwork";
+  // Mid wallet switch the account's status still describes the previous
+  // wallet (or is being re-checked): no verdict yet — the form waits rather
+  // than flashing Orderly's own deposit form.
+  else if (settling) blocker = undefined;
   else if (status === AccountStatusEnum.NotConnected) blocker = "connectWallet";
+  // Connected but not checked against Orderly yet: no verdict either.
+  else if (status === AccountStatusEnum.Connected) blocker = undefined;
   else if (isSubAccount) blocker = "subAccount";
   else if (!hasOrderlyKey) blocker = "enableTrading";
   else if (!tokensLoading && !route) blocker = "unsupportedNetwork";
@@ -132,7 +120,7 @@ export function useSwapperDeposit(
   // even before trading is enabled — what the widget is preloaded with.
   const walletAddress =
     networkId === "mainnet" && status !== AccountStatusEnum.NotConnected
-      ? accountState.address
+      ? settledAddress
       : undefined;
   const walletPatch = useMemo<DepositPatch | undefined>(() => {
     if (!route || !walletAddress) return undefined;
@@ -145,12 +133,15 @@ export function useSwapperDeposit(
       language,
     };
   }, [route, walletAddress, minDepositUsd, customData, language]);
-  const patch = blocker ? undefined : walletPatch;
+  // Mid-switch, or the account not checked yet: no widget config for it.
+  const waiting = settling || status === AccountStatusEnum.Connected;
+  const patch = blocker || waiting ? undefined : walletPatch;
   // Keep the last good patch while a newly picked token resolves instead of
   // tearing the widget down — hiding it would send it back to its home screen.
+  // Never across a wallet switch: the old wallet's config isn't this one's.
   const lastPatch = useRef<DepositPatch>();
   if (patch) lastPatch.current = patch;
-  else if (blocker) lastPatch.current = undefined;
+  else if (blocker || waiting) lastPatch.current = undefined;
   const effectivePatch = patch ?? lastPatch.current;
 
   const patchKey = keyOf(effectivePatch, brokerId);
@@ -167,11 +158,13 @@ export function useSwapperDeposit(
 
   return {
     blocker,
+    /** The account's status, for the account setup flow ("enableTrading"). */
+    status,
     /** Ready to deposit except the token list is still loading. */
     isLoading: !blocker && !effectivePatch,
     tokens,
     token,
-    selectToken,
+    selectToken: setSelected,
     minDepositUsd,
     patch: effectivePatch,
     patchKey,

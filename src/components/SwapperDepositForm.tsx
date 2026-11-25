@@ -1,10 +1,11 @@
 import { ComponentType, FC, useEffect, useLayoutEffect, useRef } from "react";
-import { Flex, Spinner } from "@orderly.network/ui";
+import { Flex, Spinner, useScreen } from "@orderly.network/ui";
 import { WidgetEventName, type TransactionSuccessPayload } from "@swapper-finance/deposit-sdk";
 import { FORM_MARKER_ATTR } from "../constants";
 import type { DepositEmbedController, DepositPatch } from "../embed/DepositEmbedController";
 import { useSwapperDeposit } from "../hooks/useSwapperDeposit";
 import type { ResolvedSwapperDepositOptions } from "../types";
+import { startAccountSetupForDeposit } from "../walletSwitch";
 import { TokenPicker } from "./TokenPicker";
 
 /**
@@ -100,9 +101,10 @@ export type SwapperDepositFormProps = {
  * Replaces the form inside the "Deposit" tab of Orderly's Deposit / Withdraw
  * dialog: receive-token picker + the preloaded Swapper widget, nothing else.
  * Falls back to Orderly's own form whenever Swapper can't serve the account
- * (testnet, sub-accounts, no wallet, trading not enabled).
+ * (testnet, sub-accounts). An account that isn't set up yet goes through
+ * Orderly's own account setup instead; with no wallet the dialog closes.
  *
- * The widget's navigation lives in the dialog header (see DialogBackButton).
+ * The widget's navigation lives in the dialog header (see DialogHeader).
  */
 export const SwapperDepositForm: FC<SwapperDepositFormProps> = ({
   controller,
@@ -117,12 +119,29 @@ export const SwapperDepositForm: FC<SwapperDepositFormProps> = ({
     controller.setSigner(state.signerKey, state.signer);
   }, [controller, state.signerKey, state.signer]);
 
-  if (state.blocker) return <Original {...originalProps} />;
+  // Not set up yet (no account, not signed in, trading disabled): Orderly's
+  // own setup modal (create account / enable trading) rather than Orderly's
+  // deposit form. The Deposit dialog closes for it; once set up, the user
+  // opens Deposit again.
+  const { isMobile } = useScreen();
+  const needsSetup = state.blocker === "enableTrading";
+  const setupStatus = state.status;
+  useEffect(() => {
+    if (!needsSetup) return;
+    startAccountSetupForDeposit({ status: setupStatus, isMobile });
+    // Once per time the form lands on an account that needs it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsSetup]);
+
+  // No wallet: the dialog closes (DialogHeader) — a spinner meanwhile, not
+  // Orderly's "connect wallet" form flashing during the close animation.
+  const closing = state.blocker === "connectWallet";
+  if (state.blocker && !needsSetup && !closing) return <Original {...originalProps} />;
 
   return (
     // No gaps around the widget: its own padding provides the spacing.
     <Flex direction="column" className="oui-w-full" {...{ [FORM_MARKER_ATTR]: "" }}>
-      {state.tokens && (
+      {state.tokens && !needsSetup && !closing && (
         <TokenPicker
           tokens={state.tokens}
           value={state.token}
@@ -130,7 +149,7 @@ export const SwapperDepositForm: FC<SwapperDepositFormProps> = ({
         />
       )}
 
-      {state.patch ? (
+      {state.patch && !needsSetup && !closing ? (
         <EmbedSlot
           controller={controller}
           patch={state.patch}
