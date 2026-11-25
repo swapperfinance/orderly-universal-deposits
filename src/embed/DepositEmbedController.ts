@@ -83,7 +83,34 @@ export class DepositEmbedController {
     },
   };
 
+  /**
+   * The mounted preload hosts (PreloadOnConnect), oldest first: the plugin
+   * mounts one in several always-on-screen places, since a host page may
+   * replace some of them, and only the oldest one preloads.
+   */
+  private preloadHosts: object[] = [];
+  private preloadHostListeners = new Set<() => void>();
+
   constructor(private readonly options: ResolvedSwapperDepositOptions) {}
+
+  /** A preload host mounted; returns its release. */
+  claimPreloadHost(host: object): () => void {
+    this.preloadHosts.push(host);
+    this.preloadHostListeners.forEach((l) => l());
+    return () => {
+      this.preloadHosts = this.preloadHosts.filter((h) => h !== host);
+      this.preloadHostListeners.forEach((l) => l());
+    };
+  }
+
+  isActivePreloadHost(host: object): boolean {
+    return this.preloadHosts[0] === host;
+  }
+
+  subscribePreloadHosts = (listener: () => void): (() => void) => {
+    this.preloadHostListeners.add(listener);
+    return () => this.preloadHostListeners.delete(listener);
+  };
 
   /**
    * Builds the hidden widget for this wallet's deposit config and starts

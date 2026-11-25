@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { createInterceptor } from "@orderly.network/plugin-core";
 import type { ApplicationState, OrderlySDK } from "@orderly.network/plugin-core";
 import { DialogHeader } from "./components/DialogHeader";
@@ -41,6 +41,14 @@ export function registerSwapperDepositPlugin(rawOptions: SwapperDepositPluginOpt
     const formOptions = withHostBranding(options, state);
     // Start converting it now, so it's ready when the widget preloads.
     void logoDataUrl(formOptions.chainLogo);
+    const withPreload = (original: ReactNode) => (
+      <>
+        <LocaleProvider>
+          <PreloadOnConnect controller={controller} options={formOptions} />
+        </LocaleProvider>
+        {original}
+      </>
+    );
     SDK.registerPlugin({
       id: PLUGIN_ID,
       name: LocaleMessages["swapperDeposits.pluginName"],
@@ -76,21 +84,27 @@ export function registerSwapperDepositPlugin(rawOptions: SwapperDepositPluginOpt
             </DialogHeader>
           </LocaleProvider>
         )),
-        // Orderly's account menu (desktop top bar, mobile account button) is
-        // on screen app-wide: wrapped, untouched, it hosts the preload, which
-        // waits for a connected wallet so the Deposit dialog opens instantly.
+        // Orderly's account menus (desktop top bar, mobile account button)
+        // and main menu are on screen app-wide: wrapped, untouched, they host
+        // the preload, which waits for a connected wallet so the Deposit
+        // dialog opens instantly. Several hosts, one active (PreloadOnConnect):
+        // a wallet connector may replace the account menus outright — the
+        // Privy connector does, without rendering the plugins under it.
         ...(options.preload
-          ? (["Account.AccountMenu", "Account.MobileAccountMenu"] as const).map((target) =>
+          ? [
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              createInterceptor(target as any, (Original, props: Record<string, unknown>) => (
-                <>
-                  <LocaleProvider>
-                    <PreloadOnConnect controller={controller} options={formOptions} />
-                  </LocaleProvider>
-                  <Original {...props} />
-                </>
-              )),
-            )
+              createInterceptor("Account.AccountMenu" as any, (Original, props: Record<string, unknown>) =>
+                withPreload(<Original {...props} />),
+              ),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              createInterceptor("Account.MobileAccountMenu" as any, (Original, props: Record<string, unknown>) =>
+                withPreload(<Original {...props} />),
+              ),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              createInterceptor("Layout.MainMenus" as any, (Original, props: Record<string, unknown>) =>
+                withPreload(<Original {...props} />),
+              ),
+            ]
           : []),
       ],
     });

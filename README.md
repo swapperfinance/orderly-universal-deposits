@@ -209,8 +209,8 @@ The widget is served from Swapper's origin in an iframe, so allow it in `frame-s
 | Target | What the plugin does |
 |---|---|
 | `Deposit.DepositForm` | Replaced by the receive-token picker and the Swapper widget (on testnet, Orderly's default deposit form). |
-| `Transfer.DepositAndWithdraw` | Wrapped, never replaced: adds the widget's back arrow to the Deposit / Withdraw tab row. The Withdraw tab is untouched. |
-| `Account.AccountMenu`, `Account.MobileAccountMenu` | Wrapped, never replaced, nothing visible: preloads the widget once a wallet connects (only with `preload` on). |
+| `Transfer.DepositAndWithdraw` | Wrapped, never replaced: adds the widget's back arrow, the paying wallet (with the EVM / Solana switch when the DEX offers both) and the close button to the Deposit / Withdraw tab row. The Withdraw tab is untouched. |
+| `Account.AccountMenu`, `Account.MobileAccountMenu`, `Layout.MainMenus` | Wrapped, never replaced, nothing visible: preloads the widget once a wallet connects (only with `preload` on). One of them is enough — a wallet connector that replaces the account menus (Privy's does) leaves the main menu to it. |
 
 Other plugins that wrap the same targets keep working.
 
